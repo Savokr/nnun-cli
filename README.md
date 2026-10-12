@@ -85,7 +85,7 @@ go build -o nnun .
 ./nnun --help
 ```
 
-CI runs on Linux, macOS, and Windows. Tests cover callback state and expiry behavior, credential rotation, origin restrictions, API conflicts, upload cleanup/ambiguous completion, and installer checksums/version pinning. The release workflow builds all six OS/architecture combinations with `CGO_ENABLED=0`, and publishes archives plus `checksums.txt` and installer copies to GitHub Releases using the built-in `GITHUB_TOKEN`. Repository Actions must have permission to create releases.
+CI runs on Linux, macOS, and Windows. Tests cover callback state and cancellation, credential rotation, origin restrictions, API conflicts, upload cleanup/ambiguous completion, and installer checksums/version pinning. Every release first reruns the full operating-system and installer CI matrix, then builds all six OS/architecture combinations with `CGO_ENABLED=0`, and publishes archives plus `checksums.txt` and installer copies to GitHub Releases using the built-in `GITHUB_TOKEN`. Repository Actions must have permission to create releases. Third-party Actions are pinned to reviewed commit hashes; Dependabot proposes monthly Action and Go dependency updates.
 
 After merging a tested change to `main`, create and push a semantic version tag:
 
