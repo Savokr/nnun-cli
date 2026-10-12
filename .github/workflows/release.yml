@@ -1,0 +1,70 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [darwin, linux, windows]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go vet ./... && go test ./...
+      - name: Build archive
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+([.-][A-Za-z0-9]+)*)?$ ]] || exit 1
+          version="${TAG#v}"
+          mkdir -p dist
+          binary=nnun
+          if [ "$GOOS" = windows ]; then binary=nnun.exe; fi
+          go build -trimpath -ldflags "-s -w -X main.version=$version" -o "dist/$binary" .
+          cd dist
+          archive="nnun_${version}_${GOOS}_${GOARCH}"
+          if [ "$GOOS" = windows ]; then zip "$archive.zip" "$binary"; else tar -czf "$archive.tar.gz" "$binary"; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nnun-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          if-no-files-found: error
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nnun-*
+          path: dist
+          merge-multiple: true
+      - name: Checksums and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          cd dist
+          sha256sum *.tar.gz *.zip > checksums.txt
+          prerelease=()
+          if [[ "$TAG" == *-* ]]; then prerelease=(--prerelease); fi
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes "${prerelease[@]}" *.tar.gz *.zip checksums.txt ../install.sh ../install.ps1
