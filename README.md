@@ -41,6 +41,7 @@ nnun projects list
 nnun use "My research"
 nnun push paper.tex appendix.pdf
 nnun files list
+nnun files complete <file-id>               # safely retry upload verification
 ```
 
 `nnun use <project-id-or-name>` verifies the project and writes a nonsecret `.nnun.json` in your current directory. Exact project names work when unambiguous. Commands find that file in the current directory or an ancestor. Add it to your own `.gitignore` if you do not want to share the project selection. Use `--project <project-id>` to override it.
@@ -70,11 +71,11 @@ Headless environments can explicitly supply a short-lived Supabase **user access
 
 `--api-url https://…` or `NNUN_API_URL` selects another Nnun website. Credentials are isolated per exact origin. HTTP is accepted only for loopback development servers. Cross-origin HTTP redirects are refused, and signed storage transfers never contain the app bearer token. Server discovery at `/api/cli/config` provides OAuth and Storage settings. The website must support API version 1 and configure its public OAuth client before interactive login works.
 
-Uploads use immutable reservations → signed direct Storage transfer → server verification. Same-name files in the same folder cause a conflict; a push never overwrites them. Supported text files are UTF-8 `.tex`, `.txt`, `.md` up to 2 MiB, and PDFs up to 6 MiB. Batch pushes validate all files first, then upload sequentially; a later failure does not undo earlier successful files. A failed transfer attempts reservation cleanup. A failure after completion begins preserves the file because the server may have completed it successfully; inspect `nnun files list` before retrying. No background sync, revisions, directory import, or TeX execution is performed.
+Uploads use immutable reservations → signed direct Storage transfer → server verification. Same-name files in the same folder cause a conflict; a push never overwrites them. Supported text files are UTF-8 `.tex`, `.txt`, `.md` up to 2 MiB, and PDFs up to 6 MiB. Batch pushes validate all files first, then upload sequentially; a later failure does not undo earlier successful files. A failed transfer attempts reservation cleanup. A failure after completion begins preserves the file because the server may have completed it successfully; the error prints an idempotent `nnun files complete <file-id> --project <project-id>` command to safely retry verification. No background sync, revisions, directory import, or TeX execution is performed.
 
 ## Develop and release
 
-Use Go 1.24 or newer:
+Use Go 1.27 or newer (the source language minimum is 1.24; CI and releases use the latest 1.27 patch):
 
 ```sh
 go mod download

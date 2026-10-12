@@ -119,7 +119,7 @@ func (c *client) push(ctx context.Context, projectID string, folderID *string, p
 	if err := c.api(ctx, "POST", "/"+projectID+"/files/"+prepared.FileID+"/complete", nil, &completed); err != nil {
 		// Completion may have succeeded even if its response was lost. Never delete
 		// this reservation: it may now be a completed, immutable original.
-		return projectFile{}, fmt.Errorf("bytes uploaded but confirmation failed for file %s; inspect nnun files list before retrying (completion is idempotent): %w", prepared.FileID, err)
+		return projectFile{}, fmt.Errorf("bytes uploaded but confirmation failed; retry safely with nnun files complete %s --project %s: %w", prepared.FileID, projectID, err)
 	}
 	return completed.File, nil
 }

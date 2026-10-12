@@ -46,7 +46,9 @@ else
 fi
 [ "$actual" = "$expected" ] || fail 'Checksum mismatch; installation stopped.'
 tar -xzf "$temp_dir/archive.tar.gz" -C "$temp_dir" nnun || fail 'Invalid release archive.'
-[ -f "$temp_dir/nnun" ] && [ ! -L "$temp_dir/nnun" ] || fail 'Archive did not contain a regular nnun binary.'
+if [ ! -f "$temp_dir/nnun" ] || [ -L "$temp_dir/nnun" ]; then
+  fail 'Archive did not contain a regular nnun binary.'
+fi
 chmod 755 "$temp_dir/nnun"
 mv -f "$temp_dir/nnun" "$install_dir/nnun"
 

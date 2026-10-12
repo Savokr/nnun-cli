@@ -277,6 +277,26 @@ func newCommand() *cobra.Command {
 	root.AddCommand(folders)
 
 	files := &cobra.Command{Use: "files", Short: "List, download, or remove originals"}
+	files.AddCommand(&cobra.Command{Use: "complete <file-id>", Short: "Retry verification after an interrupted upload confirmation", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+		id, err := selectedProject(projectID, c.origin)
+		if err != nil {
+			return err
+		}
+		if err := identifier(args[0]); err != nil {
+			return err
+		}
+		var response struct {
+			File projectFile `json:"file"`
+		}
+		if err := c.api(cmd.Context(), "POST", "/"+id+"/files/"+args[0]+"/complete", nil, &response); err != nil {
+			return err
+		}
+		if jsonOutput {
+			return printJSON(cmd.OutOrStdout(), response)
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Verified %s (%s)\n", response.File.Name, response.File.ID)
+		return nil
+	}})
 	files.AddCommand(&cobra.Command{Use: "list", Short: "List all completed files in the project", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		id, err := selectedProject(projectID, c.origin)
 		if err != nil {
