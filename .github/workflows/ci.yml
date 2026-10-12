@@ -39,6 +39,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: ./scripts/test-install.ps1
+      - name: Test Windows PowerShell 5.1 installer
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./scripts/test-install.ps1
   shellcheck:
     runs-on: ubuntu-latest
     steps:

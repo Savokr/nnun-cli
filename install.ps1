@@ -43,7 +43,7 @@ try {
     if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Archive did not contain nnun.exe.' }
     $destination = Join-Path $installDir 'nnun.exe'
     # Same-volume replacement; no partially downloaded binary reaches PATH.
-    if (Test-Path -LiteralPath $destination) { [IO.File]::Replace($binary, $destination, $null) }
+    if (Test-Path -LiteralPath $destination) { [IO.File]::Replace($binary, $destination, [NullString]::Value) }
     else { [IO.File]::Move($binary, $destination) }
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
     $parts = @($userPath -split ';' | Where-Object { $_ })
