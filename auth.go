@@ -170,15 +170,15 @@ func bindCallback(uris []string) (net.Listener, string, error) {
 	return nil, "", errors.New("no registered login port is available (127.0.0.1:43821–43823)")
 }
 
-func openBrowser(target string) error {
+func openBrowser(ctx context.Context, target string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = exec.Command("open", target)
+		cmd = exec.CommandContext(ctx, "open", target)
 	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", target)
+		cmd = exec.CommandContext(ctx, "rundll32", "url.dll,FileProtocolHandler", target)
 	default:
-		cmd = exec.Command("xdg-open", target)
+		cmd = exec.CommandContext(ctx, "xdg-open", target)
 	}
 	return cmd.Run()
 }
@@ -187,6 +187,8 @@ func (c *client) login(ctx context.Context, out io.Writer, noBrowser bool) error
 	if c.tokenOverride != "" {
 		return errors.New("unset NNUN_TOKEN before interactive login")
 	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
 	d, err := c.discover(ctx)
 	if err != nil {
 		return err
@@ -222,12 +224,10 @@ func (c *client) login(ctx context.Context, out io.Writer, noBrowser bool) error
 	target := d.SupabaseURL + "/auth/v1/oauth/authorize?" + values.Encode()
 	fmt.Fprintln(out, "Approve Nnun CLI access in your browser:", target)
 	if !noBrowser {
-		if err := openBrowser(target); err != nil {
+		if err := openBrowser(ctx, target); err != nil {
 			fmt.Fprintln(out, "Could not open a browser automatically. Open the URL above on this computer.")
 		}
 	}
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
 	var code string
 	select {
 	case code = <-codes:
